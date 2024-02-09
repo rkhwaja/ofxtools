@@ -315,13 +315,17 @@ class OFXClient:
         # Python libraries such as ``urllib.request`` and ``requests``
         # identify themselves in the ``User-Agent`` header,
         # which apparently displeases some FIs
-        return {
-            "User-Agent": self.useragent,
-            "Content-type": mimetype,
+        from collections import OrderedDict
+        return OrderedDict([
+            ("Content-type", mimetype),
+            ("Host", "ofx.firsttechfed.com"),
+            ("Content-length", str(self.serialized_request_size)),
+            ("Connection", "keep-alive"),
+            ("User-Agent", self.useragent),
             # Apparently Amex is unhappy unless it sees a MIME type of application/xml
             # with some quality rating - ANY quality rating, it seems.
-            "Accept": "*/*, {}, application/xml;q=0.9".format(mimetype),
-        }
+            # ("Accept", "*/*, {}, application/xml;q=0.9".format(mimetype)),
+        ])
 
     def dtclient(self) -> datetime.datetime:
         """
@@ -875,6 +879,8 @@ class OFXClient:
         if timeout in (None, False):
             #  timeout = socket._GLOBAL_DEFAULT_TIMEOUT  # type: ignore
             timeout = 10.0
+
+        self.serialized_request_size = len(serialized_request)
 
         if USE_REQUESTS:
             logger.info("Using requests lib to post request")
